@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="권역별 배달 병목 원인 검증 및 운영 실험 보드">
+  <title>권역별 운영 실험 보드</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">FDO FIELD OPS / PILOT 01</p>
+        <h1>권역별 운영 실험 보드</h1>
+        <p class="subtitle">문제를 정의하고, 원인을 검증하고, 조치의 효과와 비용을 기록합니다.</p>
+      </div>
+      <div class="top-actions">
+        <span class="data-badge"><span class="status-dot"></span> 예시 데이터 모드</span>
+        <button class="button button-primary" id="saveIncident">사건 기록 저장</button>
+        <button class="button button-secondary" id="exportCsv">CSV 내보내기</button>
+        <a class="button button-tableau" href="https://public.tableau.com/app/discover" target="_blank" rel="noopener noreferrer" aria-label="태블로 퍼블릭 새 탭에서 열기">태블로 열기 ↗</a>
+      </div>
+    </header>
+
+    <section class="control-strip" aria-label="사건 조건">
+      <label>권역<select id="zoneSelect"><option>대화역과 킨텍스</option></select></label>
+      <label>관찰일<input id="observeDate" type="date" value="2026-10-13"></label>
+      <label>비교 기준<select id="baselineSelect"><option>행사 없는 평일 저녁</option><option>직전 동일 요일</option></select></label>
+      <span class="source-note">마지막 새로고침 2026-10-13 18:20 KST</span>
+    </section>
+
+    <section class="hero-grid">
+      <article class="hero-card">
+        <div class="card-kicker">현재 판단</div>
+        <div class="hero-status"><span class="status-pill warning">대응 검토</span><span class="confidence">판단 신뢰도: 중간</span></div>
+        <h2>킨텍스 행사 종료 직후, 이동 병목을 먼저 확인하세요.</h2>
+        <p>도로 지체와 약한 강수가 함께 확인되었습니다. 주문 집중, 이동 동선, 매장 대기 중 실제 병목은 아직 확정하지 않았습니다.</p>
+        <div class="next-action"><span>다음 행동</span><strong>전시장 출구와 주요 픽업 매장 3곳을 현장 확인</strong></div>
+      </article>
+      <article class="metric-card"><span>외부 신호</span><strong>3 / 4</strong><small>도로 지체, 강수, 행사</small><div class="meter"><i style="width:75%"></i></div></article>
+      <article class="metric-card"><span>장기 배차 대기</span><strong>18.4%</strong><small class="virtual-label">가상 운영 데이터</small><div class="metric-change up">+6.2%p vs 기준</div></article>
+      <article class="metric-card"><span>예상 조치 비용</span><strong>₩48,000</strong><small class="virtual-label">가상 시나리오</small><div class="metric-change neutral">범위 ₩30,000 ~ ₩70,000</div></article>
+    </section>
+
+    <section class="section-grid">
+      <article class="panel chart-panel">
+        <div class="panel-heading"><div><span class="section-label">01 / SIGNALS</span><h2>시간대별 외부 신호와 운영 지표</h2></div><span class="legend-note"><i class="legend real"></i>실제 API 후보 <i class="legend virtual"></i>가상 운영</span></div>
+        <div class="chart-wrap">
+          <div class="y-axis"><span>높음</span><span>중간</span><span>낮음</span></div>
+          <div class="chart" id="signalChart" aria-label="시간대별 신호 차트"></div>
+          <div class="x-axis"><span>17:00</span><span>18:00</span><span>19:00</span><span>20:00</span><span>21:00</span></div>
+        </div>
+        <p class="chart-caption">행사 종료 직후인 19시 전후에 도로 지체와 가상 배차 대기가 함께 상승합니다. 상관관계는 원인 확정이 아닙니다.</p>
+        <div class="zone-traffic-table" id="zoneTrafficTable" aria-live="polite"><span>교통 API 확인을 누르면 대화역과 킨텍스 주변 구간을 표시합니다.</span></div>
+      </article>
+      <article class="panel source-panel">
+        <div class="panel-heading"><div><span class="section-label">02 / SOURCES</span><h2>자료 출처 상태</h2></div><div class="source-actions"><button class="button button-secondary" id="checkTrafficApi" type="button">교통 API 확인</button><button class="button button-secondary" id="checkPlacesApi" type="button">장소 API 확인</button></div></div>
+        <ul class="source-list">
+          <li><span class="source-icon pending" id="trafficSourceIcon">!</span><div><strong>경기도 구간 소통 정보</strong><small id="trafficSourceDetail">승인 대기 후 도로 속도와 지체시간 조회</small></div><span class="source-state pending-text" id="trafficSourceState">승인 대기</span></li>
+          <li><span class="source-icon pending" id="placesSourceIcon">!</span><div><strong>카카오 장소 검색</strong><small id="placesSourceDetail">킨텍스 주변 음식점 위치와 업종 조회</small></div><span class="source-state pending-text" id="placesSourceState">확인 전</span></li>
+          <li><span class="source-icon ready">✓</span><div><strong>국가교통정보센터</strong><small>돌발, 사고와 통제</small></div><span class="source-state">준비</span></li>
+          <li><span class="source-icon ready">✓</span><div><strong>기상청 단기예보</strong><small>강수, 풍속과 예보 시각</small></div><span class="source-state">준비</span></li>
+          <li><span class="source-icon pending">!</span><div><strong>주문, 라이더, 조리 자료</strong><small>공개 API 미제공, 가상값으로 표시</small></div><span class="source-state pending-text">가상</span></li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="section-grid lower-grid">
+      <article class="panel hypothesis-panel">
+        <div class="panel-heading"><div><span class="section-label">03 / DIAGNOSIS</span><h2>원인 가설과 반증</h2></div><span class="panel-hint">우선순위를 직접 바꿔 보세요.</span></div>
+        <div class="hypothesis-list" id="hypothesisList"></div>
+      </article>
+      <article class="panel action-panel">
+        <div class="panel-heading"><div><span class="section-label">04 / EXPERIMENT</span><h2>운영 조치 비교</h2></div></div>
+        <div class="action-table" id="actionTable"></div>
+        <div class="decision-box"><label for="decisionSelect">최종 결정</label><select id="decisionSelect"><option>검토 중</option><option>유지</option><option>수정</option><option>중단</option></select><label for="decisionNote">결정 이유</label><textarea id="decisionNote" rows="3" placeholder="비용, 효과, 부작용을 근거로 적어 주세요."></textarea></div>
+        <div class="experiment-result"><strong>조치 전후 결과</strong><div><label for="beforeDelay">조치 전 지연시간 분</label><input id="beforeDelay" type="number" min="0" placeholder="예 28"></div><div><label for="afterDelay">조치 후 지연시간 분</label><input id="afterDelay" type="number" min="0" placeholder="예 19"></div><div><label for="actionCost">실행 비용 원</label><input id="actionCost" type="number" min="0" placeholder="예 48000"></div><p id="effectSummary">전후 값을 입력하면 효과를 계산합니다.</p></div>
+      </article>
+    </section>
+
+    <section class="panel evidence-panel">
+      <div class="panel-heading"><div><span class="section-label">05 / FIELD CHECK</span><h2>현장 확인과 다음 행동</h2></div><span class="panel-hint">사실과 해석을 나눠 기록합니다.</span></div>
+      <div class="evidence-grid">
+        <label>관찰 사실<textarea id="fieldFact" rows="4" placeholder="예: 19:10, 전시장 2번 출구 앞 차량 진입이 느려짐"></textarea></label>
+        <label>관계자 제약<textarea id="stakeholderConstraint" rows="4" placeholder="예: 매장은 19시 이후 추가 인력을 투입하기 어려움"></textarea></label>
+        <label>선택한 조치<textarea id="selectedAction" rows="4" placeholder="예: 행사 종료 30분 동안 라이더 대기 위치를 외곽으로 안내"></textarea></label>
+      </div>
+      <div class="evidence-footer"><span>사건 ID <strong id="incidentId">DAEHWAKINTEX-20261013-001</strong></span><span>저장된 사건 <strong id="savedCount">0건</strong></span><span class="privacy-note">개인 주소, 연락처와 차량번호를 기록하지 않습니다. CSV를 내려받은 뒤 태블로에서 연결할 수 있습니다.</span></div>
+    </section>
+
+    <footer class="footer"><span>권역 배달 병목 원인 검증 및 운영 실험 보드</span><span>교통 API 실제값, 운영 지표 가상값</span></footer>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
