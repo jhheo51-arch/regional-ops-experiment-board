@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="권역별 배달 병목 원인 검증 및 운영 실험 보드">
   <title>권역별 운영 실험 보드</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -19,6 +20,8 @@
         <span class="data-badge"><span class="status-dot"></span> 예시 데이터 모드</span>
         <button class="button button-primary" id="saveIncident">사건 기록 저장</button>
         <button class="button button-secondary" id="exportCsv">CSV 내보내기</button>
+        <button class="button button-secondary" id="exportTableauCsv">태블로용 누적 CSV</button>
+        <button class="button button-secondary" id="exportReport">실험 리포트</button>
         <a class="button button-tableau" href="https://public.tableau.com/app/discover" target="_blank" rel="noopener noreferrer" aria-label="태블로 퍼블릭 새 탭에서 열기">태블로 열기 ↗</a>
       </div>
     </header>
@@ -55,14 +58,29 @@
         <div class="zone-traffic-table" id="zoneTrafficTable" aria-live="polite"><span>교통 API 확인을 누르면 대화역과 킨텍스 주변 구간을 표시합니다.</span></div>
       </article>
       <article class="panel source-panel">
-        <div class="panel-heading"><div><span class="section-label">02 / SOURCES</span><h2>자료 출처 상태</h2></div><div class="source-actions"><button class="button button-secondary" id="checkTrafficApi" type="button">교통 API 확인</button><button class="button button-secondary" id="checkPlacesApi" type="button">장소 API 확인</button></div></div>
+        <div class="panel-heading"><div><span class="section-label">02 / SOURCES</span><h2>자료 출처 상태</h2></div><div class="source-actions"><button class="button button-secondary" id="checkTrafficApi" type="button">교통 API 확인</button><button class="button button-secondary" id="checkPlacesApi" type="button">장소 API 확인</button><button class="button button-secondary" id="checkWeatherApi" type="button">날씨 API 확인</button></div></div>
         <ul class="source-list">
           <li><span class="source-icon pending" id="trafficSourceIcon">!</span><div><strong>경기도 구간 소통 정보</strong><small id="trafficSourceDetail">승인 대기 후 도로 속도와 지체시간 조회</small></div><span class="source-state pending-text" id="trafficSourceState">승인 대기</span></li>
           <li><span class="source-icon pending" id="placesSourceIcon">!</span><div><strong>카카오 장소 검색</strong><small id="placesSourceDetail">킨텍스 주변 음식점 위치와 업종 조회</small></div><span class="source-state pending-text" id="placesSourceState">확인 전</span></li>
+          <li><span class="source-icon pending" id="weatherSourceIcon">!</span><div><strong>Open-Meteo 날씨</strong><small id="weatherSourceDetail">현재 기온, 강수량과 풍속 조회</small></div><span class="source-state pending-text" id="weatherSourceState">확인 전</span></li>
           <li><span class="source-icon ready">✓</span><div><strong>국가교통정보센터</strong><small>돌발, 사고와 통제</small></div><span class="source-state">준비</span></li>
           <li><span class="source-icon ready">✓</span><div><strong>기상청 단기예보</strong><small>강수, 풍속과 예보 시각</small></div><span class="source-state">준비</span></li>
           <li><span class="source-icon pending">!</span><div><strong>주문, 라이더, 조리 자료</strong><small>공개 API 미제공, 가상값으로 표시</small></div><span class="source-state pending-text">가상</span></li>
         </ul>
+      </article>
+    </section>
+
+    <section class="section-grid map-grid">
+      <article class="panel map-panel">
+        <div class="panel-heading"><div><span class="section-label">03 / ZONE MAP</span><h2>대화역과 킨텍스 권역 위치</h2></div><span class="panel-hint">참고 위치와 주요 이동축</span></div>
+        <div id="zoneMap" class="zone-map" aria-label="대화역과 킨텍스 권역 지도"></div>
+        <p class="chart-caption">지도는 권역 범위를 설명하기 위한 참고 위치입니다. 실제 도로 구간 상태는 교통 API 표에서 확인합니다.</p>
+      </article>
+      <article class="panel history-panel">
+        <div class="panel-heading"><div><span class="section-label">04 / HISTORY</span><h2>조회 이력</h2></div><span class="panel-hint">태블로 누적 분석용</span></div>
+        <div class="history-stat"><strong id="trafficHistoryCount">0건</strong><span>교통 구간 스냅샷</span></div>
+        <div class="history-stat"><strong id="incidentHistoryCount">0건</strong><span>운영 사건 기록</span></div>
+        <p class="chart-caption">교통 API를 확인할 때마다 현재 구간 상태를 브라우저에 저장합니다. 저장 공간을 비우면 이력도 사라집니다.</p>
       </article>
     </section>
 
@@ -92,6 +110,7 @@
     <footer class="footer"><span>권역 배달 병목 원인 검증 및 운영 실험 보드</span><span>교통 API 실제값, 운영 지표 가상값</span></footer>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

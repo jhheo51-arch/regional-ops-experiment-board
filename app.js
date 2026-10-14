@@ -11,6 +11,8 @@ const actions = [
 ];
 
 const $ = (selector) => document.querySelector(selector);
+const TRAFFIC_HISTORY_KEY = 'ilsan-traffic-history';
+let zoneMap;
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
@@ -70,12 +72,29 @@ function saveIncident() {
   records.push(record);
   localStorage.setItem('ilsan-ops-incidents', JSON.stringify(records));
   $('#savedCount').textContent = `${records.length}건`;
+  updateHistoryCounts();
   showToast('사건 기록을 저장했습니다. 운영값과 가상값은 기록 기준을 확인해 주세요.');
 }
 
 function loadCount() {
   const records = JSON.parse(localStorage.getItem('ilsan-ops-incidents') || '[]');
   $('#savedCount').textContent = `${records.length}건`;
+  updateHistoryCounts();
+}
+
+function updateHistoryCounts() {
+  const incidents = JSON.parse(localStorage.getItem('ilsan-ops-incidents') || '[]');
+  const trafficRows = JSON.parse(localStorage.getItem(TRAFFIC_HISTORY_KEY) || '[]');
+  $('#trafficHistoryCount').textContent = `${trafficRows.length}건`;
+  $('#incidentHistoryCount').textContent = `${incidents.length}건`;
+}
+
+function saveTrafficHistory(result) {
+  const snapshotAt = result.fetchedAt || new Date().toISOString();
+  const rows = (result.links || []).map((item) => ({ snapshotAt, zone: '대화역과 킨텍스', route: item.routeNm || item.routeId, startNode: item.startNodeNm, endNode: item.endNodeNm, speed: item.spd, delay: item.linkDelayTime, congestion: item.congGrade }));
+  const history = JSON.parse(localStorage.getItem(TRAFFIC_HISTORY_KEY) || '[]');
+  localStorage.setItem(TRAFFIC_HISTORY_KEY, JSON.stringify([...history, ...rows].slice(-2000)));
+  updateHistoryCounts();
 }
 
 async function checkTrafficApi() {
@@ -90,6 +109,7 @@ async function checkTrafficApi() {
     const result = await response.json();
     if (!response.ok || result.error) throw new Error(result.error || 'API 응답을 확인할 수 없습니다.');
     const summary = result.summary || {};
+    saveTrafficHistory(result);
     icon.textContent = '✓';
     icon.className = 'source-icon ready';
     detail.textContent = `대화역과 킨텍스 구간 ${summary.linkCount || 0}개, 평균 속도 ${summary.avgSpeed ?? '확인 전'} km/h, 평균 지체 ${summary.avgDelay ?? '확인 전'}초, ${result.fetchedAt} 확인`;
@@ -167,12 +187,90 @@ async function checkPlacesApi() {
   }
 }
 
+async function checkWeatherApi() {
+  const button = $('#checkWeatherApi');
+  const icon = $('#weatherSourceIcon');
+  const detail = $('#weatherSourceDetail');
+  const state = $('#weatherSourceState');
+  button.disabled = true;
+  button.textContent = '확인 중';
+  try {
+    const response = await fetch('/api/weather?lat=37.6672&lon=126.7468');
+    const result = await response.json();
+    if (!response.ok || result.error) throw new Error(result.error || '날씨 API 응답을 확인할 수 없습니다.');
+    const current = result.current || {};
+    icon.textContent = '✓';
+    icon.className = 'source-icon ready';
+    detail.textContent = `기온 ${current.temperature_2m ?? '-'}°C, 강수 ${current.precipitation ?? '-'}mm, 풍속 ${current.wind_speed_10m ?? '-'}km/h`;
+    state.textContent = '연결됨';
+    state.className = 'source-state';
+    showToast('날씨 API 응답을 확인했습니다.');
+  } catch (error) {
+    icon.textContent = '!';
+    icon.className = 'source-icon pending';
+    detail.textContent = '날씨 API 응답을 확인해 주세요.';
+    state.textContent = '확인 필요';
+    state.className = 'source-state pending-text';
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = '날씨 API 확인';
+  }
+}
+
+function downloadCsv(filename, headers, rows) {
+  const csv = [headers.join(','), ...rows.map((row) => headers.map((key) => `"${String(row[key] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
+  const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportTableauCsv() {
+  const rows = JSON.parse(localStorage.getItem(TRAFFIC_HISTORY_KEY) || '[]');
+  if (!rows.length) {
+    showToast('먼저 교통 API를 확인해 이력을 만드세요.');
+    return;
+  }
+  downloadCsv('regional-ops-traffic-history.csv', ['snapshotAt', 'zone', 'route', 'startNode', 'endNode', 'speed', 'delay', 'congestion'], rows);
+  showToast(`${rows.length}건의 태블로용 누적 데이터를 내보냈습니다.`);
+}
+
+function exportReport() {
+  const report = window.open('', '_blank', 'noopener,noreferrer');
+  if (!report) {
+    showToast('팝업이 차단되었습니다. 브라우저에서 팝업을 허용해 주세요.');
+    return;
+  }
+  const before = $('#beforeDelay').value || '미입력';
+  const after = $('#afterDelay').value || '미입력';
+  const cost = $('#actionCost').value || '미입력';
+  report.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>권역별 운영 실험 리포트</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:40px auto;color:#202124;line-height:1.6}h1{font-size:28px}h2{margin-top:28px;border-bottom:1px solid #ddd;padding-bottom:8px}table{width:100%;border-collapse:collapse}td{border-bottom:1px solid #eee;padding:10px}td:first-child{width:32%;color:#61706f;font-weight:bold}</style></head><body><h1>권역별 운영 실험 리포트</h1><p>권역: ${escapeHtml($('#zoneSelect').value)} / 관찰일: ${escapeHtml($('#observeDate').value)}</p><h2>현장 확인</h2><table><tr><td>관찰 사실</td><td>${escapeHtml($('#fieldFact').value || '미입력')}</td></tr><tr><td>관계자 제약</td><td>${escapeHtml($('#stakeholderConstraint').value || '미입력')}</td></tr><tr><td>선택한 조치</td><td>${escapeHtml($('#selectedAction').value || '미입력')}</td></tr></table><h2>실험 결과</h2><table><tr><td>조치 전 지연시간</td><td>${escapeHtml(before)}분</td></tr><tr><td>조치 후 지연시간</td><td>${escapeHtml(after)}분</td></tr><tr><td>실행 비용</td><td>${escapeHtml(cost)}원</td></tr><tr><td>최종 결정</td><td>${escapeHtml($('#decisionSelect').value)}</td></tr><tr><td>결정 이유</td><td>${escapeHtml($('#decisionNote').value || '미입력')}</td></tr></table><script>window.onload=()=>window.print();</script></body></html>`);
+  report.document.close();
+}
+
+function initZoneMap() {
+  if (!window.L || !$('#zoneMap')) return;
+  zoneMap = window.L.map('zoneMap').setView([37.6672, 126.7468], 13);
+  window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(zoneMap);
+  const points = [[37.676, 126.747, '대화역'], [37.669, 126.745, '킨텍스'], [37.664, 126.751, '고양종합운동장']];
+  points.forEach(([lat, lon, label]) => window.L.marker([lat, lon]).addTo(zoneMap).bindPopup(label));
+  window.L.polyline(points.map(([lat, lon]) => [lat, lon]), { color: '#00a88f', weight: 4 }).addTo(zoneMap);
+}
+
 renderChart();
 renderHypotheses();
 renderActions();
 loadCount();
+initZoneMap();
 $('#saveIncident').addEventListener('click', saveIncident);
 $('#exportCsv').addEventListener('click', exportCsv);
+$('#exportTableauCsv').addEventListener('click', exportTableauCsv);
+$('#exportReport').addEventListener('click', exportReport);
 $('#checkTrafficApi').addEventListener('click', checkTrafficApi);
 $('#checkPlacesApi').addEventListener('click', checkPlacesApi);
+$('#checkWeatherApi').addEventListener('click', checkWeatherApi);
 ['beforeDelay', 'afterDelay', 'actionCost'].forEach((id) => $(`#${id}`).addEventListener('input', updateEffectSummary));

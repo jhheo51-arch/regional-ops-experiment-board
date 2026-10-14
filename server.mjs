@@ -10,6 +10,7 @@ const TRAFFIC_KEY = ENV.GYEONGGI_TRAFFIC_API_KEY;
 const KAKAO_KEY = ENV.KAKAO_REST_API_KEY;
 const TRAFFIC_BASE = 'https://openapigits.gg.go.kr/api/rest';
 const KAKAO_BASE = 'https://dapi.kakao.com/v2/local/search/keyword.json';
+const WEATHER_BASE = 'https://api.open-meteo.com/v1/forecast';
 const ZONE_ROUTES = [
   { routeId: '1070000021', routeNm: '중앙로/수색로', keywords: ['대화', '고양종합운동장', '일산서구청', '장성교'] },
   { routeId: '1050000985', routeNm: '고양대로/서오릉로', keywords: ['대화', '법곳', '이산포'] },
@@ -82,6 +83,17 @@ async function places(params = {}) {
   return body;
 }
 
+async function weather(params = {}) {
+  const url = new URL(WEATHER_BASE);
+  url.searchParams.set('latitude', params.lat || '37.6672');
+  url.searchParams.set('longitude', params.lon || '126.7468');
+  url.searchParams.set('current', 'temperature_2m,precipitation,wind_speed_10m');
+  url.searchParams.set('timezone', 'Asia/Seoul');
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`기상 API HTTP ${response.status}`);
+  return response.json();
+}
+
 async function zoneTraffic() {
   const links = [];
   for (const route of ZONE_ROUTES) {
@@ -130,13 +142,19 @@ async function routeApi(url, res) {
       sendJson(res, 200, { source: '카카오 장소 검색 API', fetchedAt: new Date().toISOString(), ...result });
       return true;
     }
+    if (url.pathname === '/api/weather') {
+      const result = await weather({ lat: url.searchParams.get('lat'), lon: url.searchParams.get('lon') });
+      sendJson(res, 200, { source: 'Open-Meteo 기상 API', fetchedAt: new Date().toISOString(), ...result });
+      return true;
+    }
     if (url.pathname === '/api/traffic/zone') {
       sendJson(res, 200, { source: '경기도 교통정보센터', fetchedAt: new Date().toISOString(), ...(await zoneTraffic()) });
       return true;
     }
     return false;
   } catch (error) {
-    sendJson(res, 502, { error: error.message, source: url.pathname === '/api/places' ? '카카오 장소 검색 API' : '경기도 교통정보센터' });
+    const source = url.pathname === '/api/places' ? '카카오 장소 검색 API' : url.pathname === '/api/weather' ? 'Open-Meteo 기상 API' : '경기도 교통정보센터';
+    sendJson(res, 502, { error: error.message, source });
     return true;
   }
 }
