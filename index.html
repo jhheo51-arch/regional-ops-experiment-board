@@ -33,6 +33,14 @@
       <span class="source-note">마지막 새로고침 2026-10-13 18:20 KST</span>
     </section>
 
+    <section class="process-strip" aria-label="운영 판단 흐름">
+      <a class="process-step active" href="#fieldCheck"><span>01</span><strong>사건</strong><small>언제, 어느 권역에서 어떤 문제가 있었는지</small></a>
+      <a class="process-step" href="#signals"><span>02</span><strong>신호</strong><small>교통, 날씨, 행사와 리뷰 등 확인 자료</small></a>
+      <a class="process-step" href="#diagnosis"><span>03</span><strong>가설</strong><small>지연 원인으로 추정한 설명과 반증</small></a>
+      <a class="process-step" href="#experiment"><span>04</span><strong>조치</strong><small>무엇을 바꿀지, 누가 실행할지</small></a>
+      <a class="process-step" href="#result"><span>05</span><strong>결과</strong><small>유지, 수정, 중단 중 다음 결정</small></a>
+    </section>
+
     <section class="hero-grid">
       <article class="hero-card">
         <div class="card-kicker">현재 판단</div>
@@ -47,7 +55,7 @@
     </section>
 
     <section class="section-grid">
-      <article class="panel chart-panel">
+      <article class="panel chart-panel" id="signals">
         <div class="panel-heading"><div><span class="section-label">01 / SIGNALS</span><h2>시간대별 외부 신호와 운영 지표</h2></div><span class="legend-note"><i class="legend real"></i>실제 API 후보 <i class="legend virtual"></i>가상 운영</span></div>
         <div class="chart-wrap">
           <div class="y-axis"><span>높음</span><span>중간</span><span>낮음</span></div>
@@ -85,20 +93,20 @@
     </section>
 
     <section class="section-grid lower-grid">
-      <article class="panel hypothesis-panel">
-        <div class="panel-heading"><div><span class="section-label">03 / DIAGNOSIS</span><h2>원인 가설과 반증</h2></div><span class="panel-hint">우선순위를 직접 바꿔 보세요.</span></div>
+      <article class="panel hypothesis-panel" id="diagnosis">
+        <div class="panel-heading"><div><span class="section-label">05 / DIAGNOSIS</span><h2>원인 가설과 반증</h2></div><span class="panel-hint">우선순위를 직접 바꿔 보세요.</span></div>
         <div class="hypothesis-list" id="hypothesisList"></div>
       </article>
-      <article class="panel action-panel">
-        <div class="panel-heading"><div><span class="section-label">04 / EXPERIMENT</span><h2>운영 조치 비교</h2></div></div>
+      <article class="panel action-panel" id="experiment">
+        <div class="panel-heading"><div><span class="section-label">06 / EXPERIMENT</span><h2>운영 조치 비교</h2></div></div>
         <div class="action-table" id="actionTable"></div>
         <div class="decision-box"><label for="decisionSelect">최종 결정</label><select id="decisionSelect"><option>검토 중</option><option>유지</option><option>수정</option><option>중단</option></select><label for="decisionNote">결정 이유</label><textarea id="decisionNote" rows="3" placeholder="비용, 효과, 부작용을 근거로 적어 주세요."></textarea></div>
-        <div class="experiment-result"><strong>조치 전후 결과</strong><div><label for="beforeDelay">조치 전 지연시간 분</label><input id="beforeDelay" type="number" min="0" placeholder="예 28"></div><div><label for="afterDelay">조치 후 지연시간 분</label><input id="afterDelay" type="number" min="0" placeholder="예 19"></div><div><label for="actionCost">실행 비용 원</label><input id="actionCost" type="number" min="0" placeholder="예 48000"></div><p id="effectSummary">전후 값을 입력하면 효과를 계산합니다.</p></div>
+        <div class="experiment-result" id="result"><strong>조치 전후 결과</strong><div><label for="beforeDelay">조치 전 지연시간 분</label><input id="beforeDelay" type="number" min="0" placeholder="예 28"></div><div><label for="afterDelay">조치 후 지연시간 분</label><input id="afterDelay" type="number" min="0" placeholder="예 19"></div><div><label for="actionCost">실행 비용 원</label><input id="actionCost" type="number" min="0" placeholder="예 48000"></div><p id="effectSummary">전후 값을 입력하면 효과를 계산합니다.</p></div>
       </article>
     </section>
 
-    <section class="panel evidence-panel">
-      <div class="panel-heading"><div><span class="section-label">05 / FIELD CHECK</span><h2>현장 확인과 다음 행동</h2></div><span class="panel-hint">사실과 해석을 나눠 기록합니다.</span></div>
+    <section class="panel evidence-panel" id="fieldCheck">
+      <div class="panel-heading"><div><span class="section-label">07 / FIELD CHECK</span><h2>현장 확인과 다음 행동</h2></div><span class="panel-hint">사실과 해석을 나눠 기록합니다.</span></div>
       <div class="evidence-grid">
         <label>관찰 사실<textarea id="fieldFact" rows="4" placeholder="예: 19:10, 전시장 2번 출구 앞 차량 진입이 느려짐"></textarea></label>
         <label>관계자 제약<textarea id="stakeholderConstraint" rows="4" placeholder="예: 매장은 19시 이후 추가 인력을 투입하기 어려움"></textarea></label>
