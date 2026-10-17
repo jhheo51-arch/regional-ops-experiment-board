@@ -1,5 +1,5 @@
 // 대화동·킨텍스 주거권역 교통 소통 정보를 한 번 조회해 data/traffic-history.csv에 덧붙인다.
-// Windows 작업 스케줄러가 매일 17:00~21:00 사이 30분마다 실행한다(scripts/register-collector.ps1).
+// 반복 실행은 Windows 작업 스케줄러 등에 직접 등록한다(이 저장소는 등록하지 않음).
 import { appendFile, mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ROOT, weather, zoneTraffic } from '../lib/api.mjs';
