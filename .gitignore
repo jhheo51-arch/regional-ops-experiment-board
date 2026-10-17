@@ -1,2 +1,8 @@
 .env
 *.local
+
+# 현장 원본 메모(정리 전)
+field-log/관찰메모.md
+
+# 수집 스크립트 실행 로그
+data/collector.log

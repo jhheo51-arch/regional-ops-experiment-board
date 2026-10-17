@@ -138,9 +138,17 @@ node server.mjs
 - 화면의 `날씨 API 확인` 버튼으로 현재 기상 신호를 확인합니다. Open-Meteo는 별도 키가 필요하지 않습니다.
 - 카카오 API가 오류를 반환하면 카카오 개발자 콘솔에서 앱의 지도 및 로컬 서비스 활성화 여부를 확인합니다.
 
+### 4. 저녁 교통 이력 자동 수집
+
+```powershell
+node scripts/collect-traffic.mjs
+```
+
+한 번 실행할 때마다 대화동 주변 20개 구간의 속도·지체와 그 시각의 강수량을 `data/traffic-history.csv`에 덧붙입니다. Windows 작업 스케줄러에 17:00부터 21:00까지 30분 간격으로 걸어 두면 버튼을 누르지 않아도 이력이 쌓이고, 보드의 저녁 비교와 `태블로용 누적 CSV`에 함께 반영됩니다.
+
 ## Tableau로 이어지는 흐름
 
-1. 여러 날 저녁 17~21시에 교통 API를 30분 간격으로 조회해 이력을 쌓습니다. 비 오는 날과 맑은 날이 모두 있어야 비교할 수 있습니다.
+1. 여러 날 저녁 17~21시에 교통 API를 30분 간격으로 조회해 이력을 쌓습니다(버튼 또는 `scripts/collect-traffic.mjs`). 비 오는 날과 맑은 날이 모두 있어야 비교할 수 있습니다.
 2. `태블로용 누적 CSV`를 내려받습니다.
 3. 화면의 `태블로 열기`를 누릅니다.
 4. Tableau에서 `regional-ops-traffic-history.csv`를 연결합니다.
@@ -156,6 +164,7 @@ node server.mjs
 ```powershell
 node --check app.js
 node --check server.mjs
+node --check scripts/collect-traffic.mjs
 ```
 
 ## 저장소 구성
@@ -165,7 +174,10 @@ node --check server.mjs
 | `index.html` | 운영 보드 화면과 입력 흐름 |
 | `styles.css` | 화면 스타일과 반응형 레이아웃 |
 | `app.js` | 가설, 저장, 효과 계산, CSV 내보내기 |
-| `server.mjs` | 교통, 카카오 장소와 Open-Meteo API를 연결하는 로컬 서버 |
+| `server.mjs` | 화면과 API를 제공하는 로컬 서버 |
+| `lib/api.mjs` | 경기도 교통, 카카오 장소, Open-Meteo 호출 로직 |
+| `scripts/collect-traffic.mjs` | 저녁 교통 이력을 `data/traffic-history.csv`에 쌓는 수집 스크립트 |
+| `data/` | 자동 수집한 교통 이력(공개 API 응답) |
 | `.env.example` | 필요한 환경변수 이름만 담은 예시 |
 | `PRD-권역-배달병목-운영실험보드.md` | 문제 정의, 요구사항과 구현 현황 |
 | `field-log/` | 현장 관찰 기록 양식과 사례 |

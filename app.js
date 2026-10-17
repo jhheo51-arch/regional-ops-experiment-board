@@ -160,12 +160,25 @@ function loadCount() {
   updateHistoryCounts();
 }
 
+let collectedTrafficRows = [];
+
+// 작업 스케줄러가 30분마다 쌓은 data/traffic-history.csv를 불러와 브라우저 이력과 함께 비교한다.
+async function loadCollectedHistory() {
+  try {
+    const result = await fetch('/api/traffic/history').then((response) => response.json());
+    collectedTrafficRows = result.rows || [];
+  } catch {
+    collectedTrafficRows = [];
+  }
+  updateHistoryCounts();
+}
+
 function updateHistoryCounts() {
   const incidents = JSON.parse(localStorage.getItem(INCIDENTS_KEY) || '[]');
   const trafficRows = JSON.parse(localStorage.getItem(TRAFFIC_HISTORY_KEY) || '[]');
-  $('#trafficHistoryCount').textContent = `${trafficRows.length}건`;
+  $('#trafficHistoryCount').textContent = collectedTrafficRows.length ? `${trafficRows.length}건 + 자동 수집 ${collectedTrafficRows.length}건` : `${trafficRows.length}건`;
   $('#incidentHistoryCount').textContent = `${incidents.length}건`;
-  renderTrafficCompare(trafficRows);
+  renderTrafficCompare([...trafficRows, ...collectedTrafficRows]);
 }
 
 // 권역 평균 하나로 보지 않도록, 저녁 피크 조회만 골라 강수 여부별로 나눠 비교한다. 분모(조회 횟수)를 함께 보여 준다.
@@ -343,7 +356,7 @@ function downloadCsv(filename, headers, rows) {
 }
 
 function exportTableauCsv() {
-  const rows = JSON.parse(localStorage.getItem(TRAFFIC_HISTORY_KEY) || '[]');
+  const rows = [...JSON.parse(localStorage.getItem(TRAFFIC_HISTORY_KEY) || '[]'), ...collectedTrafficRows];
   if (!rows.length) {
     showToast('먼저 교통 API를 확인해 이력을 만드세요.');
     return;
@@ -382,6 +395,7 @@ renderChart();
 renderActions();
 applyZone();
 loadCount();
+loadCollectedHistory();
 $('#zoneSelect').addEventListener('change', () => { applyZone(); updateHistoryCounts(); });
 $('#observeDate').addEventListener('change', () => { $('#incidentId').textContent = incidentId(currentZone()); });
 $('#saveIncident').addEventListener('click', saveIncident);
