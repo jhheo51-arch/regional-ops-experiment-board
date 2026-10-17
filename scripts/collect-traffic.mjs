@@ -21,7 +21,7 @@ async function main() {
   const dayType = [0, 6].includes(now.getDay()) ? '주말' : '평일';
   const rows = result.links.map((item) => [
     now.toISOString(), hour, dayType, precipitation, ZONE_LABEL, item.routeNm, item.startNodeNm, item.endNodeNm,
-    item.spd, item.linkDelayTime, item.congGrade, item.collDate, 'scheduled'
+    item.spd, item.linkDelayTime, item.congGrade, item.collDate, 'script'
   ]);
   await mkdir(join(ROOT, 'data'), { recursive: true });
   const exists = await readFile(HISTORY_FILE, 'utf8').then(() => true).catch(() => false);
