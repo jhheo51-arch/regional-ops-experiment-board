@@ -148,6 +148,11 @@ async function routeApi(url, res) {
       return true;
     }
     if (url.pathname === '/api/traffic/zone') {
+      const zone = url.searchParams.get('zone') || 'daehwa-kintex';
+      if (zone !== 'daehwa-kintex') {
+        sendJson(res, 501, { error: '이 권역의 교통 API는 아직 연결하지 않았습니다. 현재는 경기도 구간 소통 정보만 연결되어 있습니다.', source: '권역 교통 API' });
+        return true;
+      }
       sendJson(res, 200, { source: '경기도 교통정보센터', fetchedAt: new Date().toISOString(), ...(await zoneTraffic()) });
       return true;
     }
