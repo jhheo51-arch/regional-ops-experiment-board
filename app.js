@@ -1,33 +1,35 @@
 // 권역은 설정만 바꿔 끼운다. 판단 흐름(사건 → 신호 → 가설 → 조치 → 결과)은 권역과 무관하다.
+// 선정 기준은 주거 수요다. 대단지 주거지와 역세권 상업지가 붙어 있어 저녁 피크 주문이 몰리는 권역을 고른다.
 const ZONES = {
   'daehwa-kintex': {
-    label: '대화역과 킨텍스 (고양)',
+    label: '대화동·킨텍스 주거권역 (고양)',
     idPrefix: 'DAEHWAKINTEX',
-    venue: '킨텍스',
-    axis: '대화역과 킨텍스',
-    center: [37.6672, 126.7468],
-    points: [[37.676, 126.747, '대화역'], [37.669, 126.745, '킨텍스'], [37.664, 126.751, '고양종합운동장']],
-    placesQuery: '킨텍스 음식점',
+    name: '대화동',
+    axis: '대화역 상업지와 주변 단지',
+    population: '대화동 51,885명 · 23,248세대 · 1인 세대 36.4% (2026년 6월 주민등록)',
+    center: [37.6728, 126.7468],
+    points: [[37.6762, 126.7471, '대화역 상업지'], [37.6730, 126.7477, '장성마을 단지'], [37.6692, 126.7456, '킨텍스 일대 주상복합·상업지']],
     trafficSource: '경기도 구간 소통 정보',
     trafficReady: true
   },
-  'daegu-exco': {
-    label: '엑스코와 동대구 (대구)',
-    idPrefix: 'DAEGUEXCO',
-    venue: '엑스코',
-    axis: '엑스코와 동대구역',
-    center: [35.8925, 128.6180],
-    points: [[35.9069, 128.6133, '엑스코'], [35.8924, 128.6092, '경북대 북문'], [35.8773, 128.6275, '동대구역']],
-    placesQuery: '엑스코 음식점',
-    trafficSource: '대구 교통 공개 API',
+  'daegu-wolbae': {
+    label: '상인·월배·진천 주거권역 (대구 달서구)',
+    idPrefix: 'DAEGUWOLBAE',
+    name: '상인·월성·진천',
+    axis: '상인역–진천역 상업지와 주변 단지',
+    population: '상인동 58,139명 · 월성동 52,297명 · 진천동 13,271세대 (2026년 6월 주민등록)',
+    center: [35.8205, 128.5280],
+    points: [[35.8190, 128.5378, '상인역'], [35.8162, 128.5304, '월배역'], [35.8139, 128.5227, '진천역'], [35.8288, 128.5155, '월성동 단지']],
+    trafficSource: '대구 교통 공개 데이터',
     trafficReady: false
   }
 };
 
 const actions = [
-  { title: '라이더 대기 위치 조정', desc: '전시장 출구와 겹치지 않는 외곽 대기 지점 안내', score: '효과 중간' },
-  { title: '매장 수용량 조정', desc: '행사 종료 30분 동안 일부 매장의 수용량을 낮춤', score: '비용 낮음' },
-  { title: '임시 배달 범위 조정', desc: '장거리 이동 주문의 반경을 제한하는 시나리오', score: '부작용 주의' }
+  { title: '피크 시간 라이더 공급 협의', desc: '협력사와 18~20시 출근 인원과 시작 시각을 조정', score: '비용 높음' },
+  { title: '매장 조리 예상 시간 보정', desc: '픽업 대기가 긴 매장의 피크 조리 시간을 현실화', score: '비용 낮음' },
+  { title: '단지 출입 동선 안내', desc: '관리사무소와 라이더 진입·거치 위치를 협의해 안내', score: '효과 확인 필요' },
+  { title: '원거리 배달 범위 임시 조정', desc: '비 오는 피크에 상업지에서 먼 단지의 반경을 제한', score: '부작용 주의' }
 ];
 
 const $ = (selector) => document.querySelector(selector);
@@ -44,9 +46,10 @@ function currentZone() {
 
 function buildHypotheses(zone) {
   return [
-    { title: '행사 종료 직후 주문이 짧은 시간에 집중됨', detail: `${zone.venue} 행사 시간, 주변 신호와 가상 주문 수를 대조하세요.`, evidence: '반대 증거: 주문 수 변화가 작음', priority: 1 },
-    { title: `${zone.axis} 사이 이동 시간이 늘어남`, detail: '도로 지체, 강수와 전시장 진입 동선을 확인하세요.', evidence: '반대 증거: 주요 도로는 정상', priority: 2 },
-    { title: '일부 매장의 조리 수용량이 먼저 포화됨', detail: '가상 조리 대기와 현장 픽업 적체를 확인하세요.', evidence: '반대 증거: 여러 매장의 조리가 정상', priority: 3 }
+    { title: '저녁 피크 주문이 라이더 공급보다 빨리 늘어남', detail: '시간대별 가상 주문 수와 배차 대기를 대조하고, 매장 앞에 대기 라이더가 있는지 확인하세요.', evidence: '반대 증거: 매장 앞에 라이더가 대기 중인데도 지연', priority: 1 },
+    { title: '일부 매장의 조리·픽업이 먼저 포화됨', detail: `${zone.axis} 가운데 픽업 대기가 긴 매장을 현장에서 확인하세요.`, evidence: '반대 증거: 여러 매장의 픽업 대기가 짧음', priority: 2 },
+    { title: '상업지에서 먼 단지로 가는 이동 시간이 늘어남', detail: '음식점 분포와 단지까지 거리, 도로 지체와 강수를 함께 확인하세요.', evidence: '반대 증거: 가까운 단지 주문도 똑같이 지연', priority: 3 },
+    { title: '대단지 안 라스트마일에서 시간이 걸림', detail: '단지 출입 통제, 지하주차장 진입 제한, 엘리베이터 대기를 현장에서 확인하세요.', evidence: '반대 증거: 소규모·저층 건물 주문도 똑같이 지연', priority: 4 }
   ];
 }
 
@@ -66,12 +69,13 @@ function applyZone() {
   $('#hypothesisReason').value = '';
   renderHypotheses();
   $('#incidentId').textContent = incidentId(zone);
-  document.querySelectorAll('[data-venue]').forEach((node) => { node.textContent = zone.venue; });
+  document.querySelectorAll('[data-name]').forEach((node) => { node.textContent = zone.name; });
   document.querySelectorAll('[data-axis]').forEach((node) => { node.textContent = zone.axis; });
+  $('#zonePopulation').textContent = zone.population;
   $('#trafficSourceName').textContent = zone.trafficSource;
   $('#trafficSourceDetail').textContent = zone.trafficReady ? '승인 대기 후 도로 속도와 지체시간 조회' : '아직 연결하지 않음. 구간 단위 데이터 제공 여부 확인 필요';
   $('#trafficSourceState').textContent = zone.trafficReady ? '승인 대기' : '미연결';
-  $('#placesSourceDetail').textContent = `${zone.venue} 주변 음식점 위치와 업종 조회`;
+  $('#placesSourceDetail').textContent = `${zone.name} 권역 반경 3km 음식점 수와 위치 조회`;
   $('#zoneTrafficTable').innerHTML = `<span>교통 API 확인을 누르면 ${escapeHtml(zone.axis)} 주변 구간을 표시합니다.</span>`;
   drawZoneMap(zone);
 }
@@ -242,12 +246,12 @@ async function checkPlacesApi() {
   try {
     const zone = currentZone();
     const [lat, lon] = zone.center;
-    const response = await fetch(`/api/places?query=${encodeURIComponent(zone.placesQuery)}&x=${lon}&y=${lat}&radius=3000`);
+    const response = await fetch(`/api/places?query=${encodeURIComponent('음식점')}&x=${lon}&y=${lat}&radius=3000`);
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || '카카오 API 응답을 확인할 수 없습니다.');
     icon.textContent = '✓';
     icon.className = 'source-icon ready';
-    detail.textContent = `${zone.venue} 주변 음식점 ${result.meta.total_count}건 검색, ${result.fetchedAt} 확인`;
+    detail.textContent = `${zone.name} 권역 반경 3km 음식점 ${result.meta.total_count}건 검색, ${result.fetchedAt} 확인`;
     state.textContent = '연결됨';
     state.className = 'source-state';
     showToast('카카오 장소 검색 API 응답을 확인했습니다.');

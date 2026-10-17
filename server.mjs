@@ -73,7 +73,7 @@ async function traffic(path, params = {}) {
 async function places(params = {}) {
   if (!KAKAO_KEY) throw new Error('KAKAO_REST_API_KEY가 비어 있습니다.');
   const url = new URL(KAKAO_BASE);
-  url.searchParams.set('query', params.query || '킨텍스 음식점');
+  url.searchParams.set('query', params.query || '음식점');
   if (params.x) url.searchParams.set('x', params.x);
   if (params.y) url.searchParams.set('y', params.y);
   if (params.radius) url.searchParams.set('radius', params.radius);
@@ -138,7 +138,7 @@ async function routeApi(url, res) {
       return true;
     }
     if (url.pathname === '/api/places') {
-      const result = await places({ query: url.searchParams.get('query') || '킨텍스 음식점', x: url.searchParams.get('x'), y: url.searchParams.get('y'), radius: url.searchParams.get('radius') });
+      const result = await places({ query: url.searchParams.get('query') || '음식점', x: url.searchParams.get('x'), y: url.searchParams.get('y'), radius: url.searchParams.get('radius') });
       sendJson(res, 200, { source: '카카오 장소 검색 API', fetchedAt: new Date().toISOString(), ...result });
       return true;
     }
