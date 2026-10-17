@@ -17,7 +17,7 @@ const ZONES = {
     idPrefix: 'DAEGUWOLBAE',
     name: '상인·월성·진천',
     axis: '상인역–진천역 상업지와 주변 단지',
-    population: '상인동 58,139명 · 월성동 52,297명 · 진천동 13,271세대 (2026년 6월 주민등록)',
+    population: '상인동 58,139명(1인 세대 38.5%) · 월성동 52,297명(28.8%) · 진천동 30,134명(34.3%) (2026년 6월 주민등록)',
     center: [35.8205, 128.5280],
     points: [[35.8190, 128.5378, '상인역'], [35.8162, 128.5304, '월배역'], [35.8139, 128.5227, '진천역'], [35.8288, 128.5155, '월성동 단지']],
     trafficSource: '대구 교통 공개 데이터',
@@ -165,11 +165,42 @@ function updateHistoryCounts() {
   const trafficRows = JSON.parse(localStorage.getItem(TRAFFIC_HISTORY_KEY) || '[]');
   $('#trafficHistoryCount').textContent = `${trafficRows.length}건`;
   $('#incidentHistoryCount').textContent = `${incidents.length}건`;
+  renderTrafficCompare(trafficRows);
 }
 
-function saveTrafficHistory(result) {
+// 권역 평균 하나로 보지 않도록, 저녁 피크 조회만 골라 강수 여부별로 나눠 비교한다. 분모(조회 횟수)를 함께 보여 준다.
+function renderTrafficCompare(rows) {
+  const evening = rows.filter((row) => row.zone === currentZone().label && Number(row.hour) >= 17 && Number(row.hour) < 21);
+  const group = (rain) => {
+    const items = evening.filter((row) => (Number(row.precipitation) > 0) === rain && row.precipitation !== '' && row.precipitation != null);
+    const snapshots = new Set(items.map((row) => row.snapshotAt)).size;
+    const avg = (key) => items.length ? (items.reduce((sum, row) => sum + Number(row[key] || 0), 0) / items.length).toFixed(1) : '-';
+    return { snapshots, speed: avg('speed'), delay: avg('delay') };
+  };
+  const rain = group(true);
+  const dry = group(false);
+  $('#trafficCompare').textContent = rain.snapshots + dry.snapshots
+    ? `저녁 17~21시 · 비: 조회 ${rain.snapshots}회, 평균 ${rain.speed}km/h, 지체 ${rain.delay}초 / 맑음: 조회 ${dry.snapshots}회, 평균 ${dry.speed}km/h, 지체 ${dry.delay}초`
+    : '저녁 17~21시 조회가 쌓이면 강수 여부별 평균 속도와 지체를 비교합니다.';
+}
+
+async function fetchPrecipitation() {
+  try {
+    const [lat, lon] = currentZone().center;
+    const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+    const result = await response.json();
+    return result.current?.precipitation ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function saveTrafficHistory(result, precipitation) {
   const snapshotAt = result.fetchedAt || new Date().toISOString();
-  const rows = (result.links || []).map((item) => ({ snapshotAt, zone: currentZone().label, route: item.routeNm || item.routeId, startNode: item.startNodeNm, endNode: item.endNodeNm, speed: item.spd, delay: item.linkDelayTime, congestion: item.congGrade }));
+  const local = new Date(snapshotAt);
+  const hour = Number.isNaN(local.getTime()) ? '' : local.getHours();
+  const dayType = Number.isNaN(local.getTime()) ? '' : [0, 6].includes(local.getDay()) ? '주말' : '평일';
+  const rows = (result.links || []).map((item) => ({ snapshotAt, hour, dayType, precipitation, zone: currentZone().label, route: item.routeNm || item.routeId, startNode: item.startNodeNm, endNode: item.endNodeNm, speed: item.spd, delay: item.linkDelayTime, congestion: item.congGrade }));
   const history = JSON.parse(localStorage.getItem(TRAFFIC_HISTORY_KEY) || '[]');
   localStorage.setItem(TRAFFIC_HISTORY_KEY, JSON.stringify([...history, ...rows].slice(-2000)));
   updateHistoryCounts();
@@ -184,11 +215,11 @@ async function checkTrafficApi() {
   button.disabled = true;
   button.textContent = '확인 중';
   try {
-    const response = await fetch('/api/traffic/zone?zone=' + encodeURIComponent($('#zoneSelect').value));
+    const [response, precipitation] = await Promise.all([fetch('/api/traffic/zone?zone=' + encodeURIComponent($('#zoneSelect').value)), fetchPrecipitation()]);
     const result = await response.json();
     if (!response.ok || result.error) throw new Error(result.error || 'API 응답을 확인할 수 없습니다.');
     const summary = result.summary || {};
-    saveTrafficHistory(result);
+    saveTrafficHistory(result, precipitation);
     icon.textContent = '✓';
     icon.className = 'source-icon ready';
     detail.textContent = `${zone.axis} 구간 ${summary.linkCount || 0}개, 평균 속도 ${summary.avgSpeed ?? '확인 전'} km/h, 평균 지체 ${summary.avgDelay ?? '확인 전'}초, ${result.fetchedAt} 확인`;
@@ -317,7 +348,7 @@ function exportTableauCsv() {
     showToast('먼저 교통 API를 확인해 이력을 만드세요.');
     return;
   }
-  downloadCsv('regional-ops-traffic-history.csv', ['snapshotAt', 'zone', 'route', 'startNode', 'endNode', 'speed', 'delay', 'congestion'], rows);
+  downloadCsv('regional-ops-traffic-history.csv', ['snapshotAt', 'hour', 'dayType', 'precipitation', 'zone', 'route', 'startNode', 'endNode', 'speed', 'delay', 'congestion'], rows);
   showToast(`${rows.length}건의 태블로용 누적 데이터를 내보냈습니다.`);
 }
 
@@ -351,7 +382,7 @@ renderChart();
 renderActions();
 applyZone();
 loadCount();
-$('#zoneSelect').addEventListener('change', applyZone);
+$('#zoneSelect').addEventListener('change', () => { applyZone(); updateHistoryCounts(); });
 $('#observeDate').addEventListener('change', () => { $('#incidentId').textContent = incidentId(currentZone()); });
 $('#saveIncident').addEventListener('click', saveIncident);
 $('#exportCsv').addEventListener('click', exportCsv);
