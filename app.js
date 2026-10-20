@@ -73,7 +73,7 @@ function applyZone() {
   document.querySelectorAll('[data-axis]').forEach((node) => { node.textContent = zone.axis; });
   $('#zonePopulation').textContent = zone.population;
   $('#trafficSourceName').textContent = zone.trafficSource;
-  $('#trafficSourceDetail').textContent = zone.trafficReady ? '승인 대기 후 도로 속도와 지체시간 조회' : '아직 연결하지 않음. 구간 단위 데이터 제공 여부 확인 필요';
+  $('#trafficSourceDetail').textContent = zone.trafficReady ? '승인 대기 후 도로 구간 속도 조회' : '아직 연결하지 않음. 구간 단위 데이터 제공 여부 확인 필요';
   $('#trafficSourceState').textContent = zone.trafficReady ? '승인 대기' : '미연결';
   $('#placesSourceDetail').textContent = `${zone.name} 권역 반경 3km 음식점 수와 위치 조회`;
   $('#zoneTrafficTable').innerHTML = `<span>교통 API 확인을 누르면 ${escapeHtml(zone.axis)} 주변 구간을 표시합니다.</span>`;
@@ -188,13 +188,14 @@ function renderTrafficCompare(rows) {
     const items = evening.filter((row) => (Number(row.precipitation) > 0) === rain && row.precipitation !== '' && row.precipitation != null);
     const snapshots = new Set(items.map((row) => row.snapshotAt)).size;
     const avg = (key) => items.length ? (items.reduce((sum, row) => sum + Number(row[key] || 0), 0) / items.length).toFixed(1) : '-';
-    return { snapshots, speed: avg('speed'), delay: avg('delay') };
+    return { snapshots, speed: avg('speed') };
   };
   const rain = group(true);
   const dry = group(false);
+  // 지체시간은 API가 항상 0초를 돌려줘 비교에서 뺀다(사례 #1 검산).
   $('#trafficCompare').textContent = rain.snapshots + dry.snapshots
-    ? `저녁 17~21시 · 비: 조회 ${rain.snapshots}회, 평균 ${rain.speed}km/h, 지체 ${rain.delay}초 / 맑음: 조회 ${dry.snapshots}회, 평균 ${dry.speed}km/h, 지체 ${dry.delay}초`
-    : '저녁 17~21시 조회가 쌓이면 강수 여부별 평균 속도와 지체를 비교합니다.';
+    ? `저녁 17~21시 · 비: 조회 ${rain.snapshots}회, 평균 ${rain.speed}km/h / 맑음: 조회 ${dry.snapshots}회, 평균 ${dry.speed}km/h`
+    : '저녁 17~21시 조회가 쌓이면 강수 여부별 평균 속도를 비교합니다.';
 }
 
 async function fetchPrecipitation() {
@@ -235,8 +236,8 @@ async function checkTrafficApi() {
     saveTrafficHistory(result, precipitation);
     icon.textContent = '✓';
     icon.className = 'source-icon ready';
-    detail.textContent = `${zone.axis} 구간 ${summary.linkCount || 0}개, 평균 속도 ${summary.avgSpeed ?? '확인 전'} km/h, 평균 지체 ${summary.avgDelay ?? '확인 전'}초, ${result.fetchedAt} 확인`;
-    $('#zoneTrafficTable').innerHTML = `<table><thead><tr><th>노선</th><th>시작</th><th>종점</th><th>속도 km/h</th><th>지체 초</th><th>혼잡</th></tr></thead><tbody>${(result.links || []).slice(0, 10).map((item) => `<tr><td>${escapeHtml(item.routeNm || item.routeId)}</td><td>${escapeHtml(item.startNodeNm)}</td><td>${escapeHtml(item.endNodeNm)}</td><td>${escapeHtml(item.spd)}</td><td>${escapeHtml(item.linkDelayTime)}</td><td>${escapeHtml(item.congGrade)}</td></tr>`).join('') || '<tr><td colspan="6">연결된 구간이 없습니다.</td></tr>'}</tbody></table>`;
+    detail.textContent = `${zone.axis} 구간 ${summary.linkCount || 0}개, 평균 속도 ${summary.avgSpeed ?? '확인 전'} km/h, ${result.fetchedAt} 확인`;
+    $('#zoneTrafficTable').innerHTML = `<table><thead><tr><th>노선</th><th>시작</th><th>종점</th><th>속도 km/h</th><th>지체 초(참고)</th><th>혼잡 등급(참고)</th></tr></thead><tbody>${(result.links || []).slice(0, 10).map((item) => `<tr><td>${escapeHtml(item.routeNm || item.routeId)}</td><td>${escapeHtml(item.startNodeNm)}</td><td>${escapeHtml(item.endNodeNm)}</td><td>${escapeHtml(item.spd)}</td><td>${escapeHtml(item.linkDelayTime)}</td><td>${escapeHtml(item.congGrade)}</td></tr>`).join('') || '<tr><td colspan="6">연결된 구간이 없습니다.</td></tr>'}</tbody></table>`;
     state.textContent = '연결됨';
     state.className = 'source-state';
     showToast('경기도 교통 API 응답을 확인했습니다.');

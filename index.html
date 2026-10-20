@@ -46,10 +46,10 @@
         <div class="card-kicker">현재 판단 · 예시 시나리오</div>
         <div class="hero-status"><span class="status-pill warning">대응 검토</span><span class="confidence">판단 신뢰도: 중간</span></div>
         <h2><span data-name>대화동</span> 비 오는 평일 저녁, 지연이 어디서 생기는지 먼저 나눠 보세요.</h2>
-        <p>약한 강수와 도로 지체가 함께 확인되었고, 장기 배차 대기가 기준보다 늘었습니다(가상). 주문 집중, 매장 조리, 원거리 이동, 단지 안 라스트마일 중 실제 병목은 아직 확정하지 않았습니다.</p>
+        <p>약한 강수와 일부 도로 구간 감속이 함께 확인되었고, 장기 배차 대기가 기준보다 늘었습니다(가상). 주문 집중, 매장 조리, 원거리 이동, 단지 안 라스트마일 중 실제 병목은 아직 확정하지 않았습니다.</p>
         <div class="next-action"><span>다음 행동</span><strong>상업지 매장 2곳의 픽업 대기와 대단지 1곳의 출입 동선을 현장 확인</strong></div>
       </article>
-      <article class="metric-card"><span>외부 신호</span><strong>3 / 4</strong><small>강수, 도로 지체, 피크 시간대</small><div class="meter"><i style="width:75%"></i></div></article>
+      <article class="metric-card"><span>외부 신호</span><strong>3 / 4</strong><small>강수, 도로 감속, 피크 시간대</small><div class="meter"><i style="width:75%"></i></div></article>
       <article class="metric-card"><span>장기 배차 대기</span><strong>18.4%</strong><small class="virtual-label">가상 운영 데이터</small><div class="metric-change up">+6.2%p vs 기준</div></article>
       <article class="metric-card"><span>예상 조치 비용</span><strong>₩48,000</strong><small class="virtual-label">가상 시나리오</small><div class="metric-change neutral">범위 ₩30,000 ~ ₩70,000</div></article>
     </section>
@@ -68,7 +68,7 @@
       <article class="panel source-panel">
         <div class="panel-heading"><div><span class="section-label">02 / SOURCES</span><h2>자료 출처 상태</h2></div><div class="source-actions"><button class="button button-secondary" id="checkTrafficApi" type="button">교통 API 확인</button><button class="button button-secondary" id="checkPlacesApi" type="button">장소 API 확인</button><button class="button button-secondary" id="checkWeatherApi" type="button">날씨 API 확인</button></div></div>
         <ul class="source-list">
-          <li><span class="source-icon pending" id="trafficSourceIcon">!</span><div><strong id="trafficSourceName">경기도 구간 소통 정보</strong><small id="trafficSourceDetail">승인 대기 후 도로 속도와 지체시간 조회</small></div><span class="source-state pending-text" id="trafficSourceState">승인 대기</span></li>
+          <li><span class="source-icon pending" id="trafficSourceIcon">!</span><div><strong id="trafficSourceName">경기도 구간 소통 정보</strong><small id="trafficSourceDetail">승인 대기 후 도로 구간 속도 조회</small></div><span class="source-state pending-text" id="trafficSourceState">승인 대기</span></li>
           <li><span class="source-icon pending" id="placesSourceIcon">!</span><div><strong>카카오 장소 검색</strong><small id="placesSourceDetail">대화동 권역 반경 3km 음식점 수와 위치 조회</small></div><span class="source-state pending-text" id="placesSourceState">확인 전</span></li>
           <li><span class="source-icon pending" id="weatherSourceIcon">!</span><div><strong>Open-Meteo 날씨</strong><small id="weatherSourceDetail">현재 기온, 강수량과 풍속 조회</small></div><span class="source-state pending-text" id="weatherSourceState">확인 전</span></li>
           <li><span class="source-icon pending">!</span><div><strong>국가교통정보센터</strong><small>돌발, 사고와 통제 · 다음 단계</small></div><span class="source-state pending-text">미연결</span></li>
@@ -88,7 +88,7 @@
         <div class="panel-heading"><div><span class="section-label">04 / HISTORY</span><h2>조회 이력</h2></div><span class="panel-hint">태블로 누적 분석용</span></div>
         <div class="history-stat"><strong id="trafficHistoryCount">0건</strong><span>교통 구간 스냅샷</span></div>
         <div class="history-stat"><strong id="incidentHistoryCount">0건</strong><span>운영 사건 기록</span></div>
-        <div id="trafficCompare" class="chart-caption">저녁 17~21시 조회가 쌓이면 강수 여부별 평균 속도와 지체를 비교합니다.</div>
+        <div id="trafficCompare" class="chart-caption">저녁 17~21시 조회가 쌓이면 강수 여부별 평균 속도를 비교합니다.</div>
         <p class="chart-caption">교통 API를 확인할 때마다 현재 구간 상태와 그 시각의 강수량을 브라우저에 저장합니다. 저장 공간을 비우면 이력도 사라집니다.</p>
       </article>
     </section>
@@ -97,7 +97,7 @@
       <article class="panel hypothesis-panel" id="diagnosis">
         <div class="panel-heading"><div><span class="section-label">05 / DIAGNOSIS</span><h2>원인 가설과 반증</h2></div><span class="panel-hint">우선순위를 직접 바꿔 보세요.</span></div>
         <div class="hypothesis-list" id="hypothesisList"></div>
-        <label class="reason-field" for="hypothesisReason">우선순위 변경 이유<textarea id="hypothesisReason" rows="2" placeholder="예: 18:50 교통 API 주요 구간 지체 0초, 매장 앞 대기 라이더 3명, 단지 정문에서 도보 전환 확인 → 라스트마일을 1순위로"></textarea></label>
+        <label class="reason-field" for="hypothesisReason">우선순위 변경 이유<textarea id="hypothesisReason" rows="2" placeholder="예: 18:50 교통 API 감속 구간 4곳뿐, 매장 앞 대기 라이더 3명, 단지 정문에서 도보 전환 확인 → 라스트마일을 1순위로"></textarea></label>
       </article>
       <article class="panel action-panel" id="experiment">
         <div class="panel-heading"><div><span class="section-label">06 / EXPERIMENT</span><h2>운영 조치 비교</h2></div></div>
